@@ -16,24 +16,56 @@ type signal struct {
 	phrase string
 	field  string
 	value  string
+	// blockedBy are phrases that contain this one while meaning the opposite.
+	// A bare substring test cannot see negation: "Kein Restaurant" contains
+	// "restaurant", so without this the same six words assert both that the
+	// hotel has a restaurant and that it does not, and the report invents a
+	// conflict inside a single unambiguous sentence.
+	blockedBy []string
+}
+
+// fires reports whether the signal's phrase is present and not negated.
+func (s signal) fires(text string) bool {
+	if !strings.Contains(text, s.phrase) {
+		return false
+	}
+	for _, b := range s.blockedBy {
+		if strings.Contains(text, b) {
+			return false
+		}
+	}
+	return true
 }
 
 // proseSignals read a free-text description. This is where the binding policy
 // usually lives, and where a structured schema never looks.
 var proseSignals = []signal{
-	{"adults-only", "policy.children", "false"},
-	{"adults only", "policy.children", "false"},
-	{"no children", "policy.children", "false"},
+	{phrase: "adults-only", field: "policy.children", value: "false"},
+	{phrase: "adults only", field: "policy.children", value: "false"},
+	{phrase: "no children", field: "policy.children", value: "false"},
+
+	// A hotel's negative facts live almost entirely in prose, and in whatever
+	// language the feed was written in. "Kein Restaurant" is the only denial in
+	// this dataset, and the record's structured amenities field is null — so
+	// the schema view loses both this and the breakfast beside it.
+	{phrase: "kein restaurant", field: "amenity.restaurant", value: "false"},
+	{phrase: "no restaurant", field: "amenity.restaurant", value: "false"},
+	{phrase: "restaurant", field: "amenity.restaurant", value: "true",
+		blockedBy: []string{"kein restaurant", "no restaurant", "without restaurant", "ohne restaurant"}},
+	{phrase: "frühstück inklusive", field: "amenity.breakfast", value: "true"},
+	{phrase: "fruhstuck inklusive", field: "amenity.breakfast", value: "true"},
+	{phrase: "breakfast included", field: "amenity.breakfast", value: "true"},
+	{phrase: "includes breakfast", field: "amenity.breakfast", value: "true"},
 }
 
 // facilitySignals read a structured amenity or feature list. A facility for
 // children is an assertion that children are allowed, which is why it can
 // contradict the prose above.
 var facilitySignals = []signal{
-	{"kids club", "policy.children", "true"},
-	{"kids' club", "policy.children", "true"},
-	{"children's club", "policy.children", "true"},
-	{"childrens club", "policy.children", "true"},
+	{phrase: "kids club", field: "policy.children", value: "true"},
+	{phrase: "kids' club", field: "policy.children", value: "true"},
+	{phrase: "children's club", field: "policy.children", value: "true"},
+	{phrase: "childrens club", field: "policy.children", value: "true"},
 }
 
 // policyClaims are what a record's prose and its structured fields each assert
@@ -47,7 +79,7 @@ func policyClaims(rec Record) []Claim {
 
 	description := strings.ToLower(rec.Description)
 	for _, s := range proseSignals {
-		if strings.Contains(description, s.phrase) {
+		if s.fires(description) {
 			c.add(s.field, s.value, rec.Source+"/description")
 		}
 	}
@@ -55,7 +87,7 @@ func policyClaims(rec Record) []Claim {
 	for _, feature := range rec.Features {
 		lowered := strings.ToLower(feature)
 		for _, s := range facilitySignals {
-			if strings.Contains(lowered, s.phrase) {
+			if s.fires(lowered) {
 				c.add(s.field, s.value, rec.Source+"/features")
 			}
 		}
