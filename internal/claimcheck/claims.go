@@ -19,7 +19,7 @@ func UnresolvedCoords() int64 { return unresolvedCoords.Load() }
 // knownFields is the set of fields the report always speaks about. A field is
 // only ever "absent" relative to a list like this one — without it, a field
 // nobody claimed is indistinguishable from a field nobody thought to ask about.
-var knownFields = []string{"city", "stars", "policy.children"}
+var knownFields = append([]string{"city", "stars", "policy.children"}, amenityFields()...)
 
 // lastSeenLayout is the date format the scrape feed uses.
 const lastSeenLayout = "2006-01-02"
@@ -43,6 +43,7 @@ func claimsFor(recs []Record) []Claim {
 		out = append(out, cityClaims(rec)...)
 		out = append(out, starClaims(rec)...)
 		out = append(out, policyClaims(rec)...)
+		out = append(out, amenityClaims(rec)...)
 	}
 	return out
 }
