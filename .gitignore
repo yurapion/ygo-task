@@ -1,0 +1,10 @@
+# binaries
+/ygo-task
+*.exe
+*.test
+*.out
+
+# editor / OS
+.idea/
+.vscode/
+.DS_Store
