@@ -32,8 +32,9 @@ var closureWords = []string{"closed", "out of order", "not working", "unavailabl
 // feed in most people's judgement, but nothing here ranks them: the report
 // states that one says the pool exists and the other says it was closed, and
 // leaves the reader to weigh a three-year-old review against an undated feed.
-func amenityClaims(rec Record) []Claim {
+func amenityClaims(rec Record) ([]Claim, []Unparsed) {
 	c := claimSet{observed: observedAt(rec)}
+	var unparsed []Unparsed
 
 	// A nil amenities field is the feed declining to say. Only a non-nil
 	// string is evidence, and an empty one still asserts nothing.
@@ -41,13 +42,30 @@ func amenityClaims(rec Record) []Claim {
 		for _, token := range strings.Split(*rec.Amenities, ",") {
 			if name, ok := canonicalAmenity(token); ok {
 				c.add("amenity."+name, "true", rec.Source+"/amenities")
+				continue
 			}
+			unparsed = appendUnparsedFacility(unparsed, token, rec.Source+"/amenities")
 		}
 	}
 
+	// A feature can be a facility ("3 pools") or a policy signal ("kids club"),
+	// and it is only unrecognised when it is neither. Checking one and not the
+	// other would report half the vocabulary's own hits as misses.
 	for _, feature := range rec.Features {
+		matched := false
 		if name, ok := canonicalAmenity(feature); ok {
 			c.add("amenity."+name, "true", rec.Source+"/features")
+			matched = true
+		}
+		lowered := strings.ToLower(feature)
+		for _, sig := range facilitySignals {
+			if sig.fires(lowered) {
+				c.add(sig.field, sig.value, rec.Source+"/features")
+				matched = true
+			}
+		}
+		if !matched {
+			unparsed = appendUnparsedFacility(unparsed, feature, rec.Source+"/features")
 		}
 	}
 
@@ -63,7 +81,22 @@ func amenityClaims(rec Record) []Claim {
 		}
 	}
 
-	return c.claims
+	return c.claims, unparsed
+}
+
+// appendUnparsedFacility records a token the vocabulary does not recognise.
+//
+// The bucket deliberately mixes two things it cannot separate: a facility with
+// no canonical name ("swim-up bar") and a token that is not a facility at all
+// ("pets allowed"). Telling them apart needs the vocabulary this exists to stop
+// guessing at, so both are handed to the reader as raw text.
+func appendUnparsedFacility(out []Unparsed, raw, source string) []Unparsed {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		// An empty CSV token is not an unrecognised facility, it is nothing.
+		return out
+	}
+	return append(out, Unparsed{Kind: "facility", Text: text, Source: source})
 }
 
 // canonicalAmenity maps one feed spelling onto the vocabulary, dropping any

@@ -43,7 +43,49 @@ func reportProperty(w io.Writer, p Property) error {
 			}
 		}
 	}
+	return reportUnparsed(w, p.Unparsed)
+}
+
+// reportUnparsed prints what the feed published and this tool could not place.
+//
+// It is the section that keeps the rest honest. Every status above is computed
+// over a vocabulary someone chose, and without this block a facility that was
+// discarded and a facility that does not exist produce the same output.
+func reportUnparsed(w io.Writer, unparsed []Unparsed) error {
+	if len(unparsed) == 0 {
+		return nil
+	}
+	if _, err := fmt.Fprintf(w, "  %-20s %d\n", "UNPARSED", len(unparsed)); err != nil {
+		return err
+	}
+	for _, u := range unparsed {
+		if _, err := fmt.Fprintf(w, "      %-12s %-45s %s\n",
+			u.Kind, unparsedText(u), u.Source); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// unparsedText renders a JSON key beside its raw value, and everything else as
+// the raw text itself.
+func unparsedText(u Unparsed) string {
+	if u.Name != "" {
+		return u.Name + " = " + truncate(u.Text, 45-len(u.Name)-3)
+	}
+	// Truncate inside the quotes, so a clipped line still reads as a complete
+	// quoted string rather than one missing its closing mark.
+	return quoted(truncate(u.Text, 43))
+}
+
+// truncate keeps one unparsed item to one line. A description can be a
+// paragraph, and a report nobody can scan hides the conflicts as effectively as
+// not printing them.
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max-1] + "…"
 }
 
 // observedLabel keeps "the feed carried no date" visually distinct from a date,

@@ -30,22 +30,36 @@ func Check(recs []Record, now time.Time) []Property {
 	props := make([]Property, 0, len(groups))
 	for _, g := range groups {
 		p := g.property()
-		p.Findings = findings(claimsFor(g.records), now)
+		claims, unparsed := extract(g.records)
+		p.Findings = findings(claims, now)
+		sortUnparsed(unparsed)
+		countUnparsed(unparsed)
+		p.Unparsed = unparsed
 		props = append(props, p)
 	}
 	return props
 }
 
-// claimsFor extracts every claim each record makes.
-func claimsFor(recs []Record) []Claim {
-	var out []Claim
+// extract pulls every claim each record makes, and everything it published that
+// this tool could not place.
+func extract(recs []Record) ([]Claim, []Unparsed) {
+	var claims []Claim
+	var unparsed []Unparsed
 	for _, rec := range recs {
-		out = append(out, cityClaims(rec)...)
-		out = append(out, starClaims(rec)...)
-		out = append(out, policyClaims(rec)...)
-		out = append(out, amenityClaims(rec)...)
+		claims = append(claims, cityClaims(rec)...)
+		claims = append(claims, starClaims(rec)...)
+
+		policy, proseUnparsed := policyClaims(rec)
+		claims = append(claims, policy...)
+		unparsed = append(unparsed, proseUnparsed...)
+
+		amenities, facilityUnparsed := amenityClaims(rec)
+		claims = append(claims, amenities...)
+		unparsed = append(unparsed, facilityUnparsed...)
+
+		unparsed = append(unparsed, unknownFieldUnparsed(rec)...)
 	}
-	return out
+	return claims, unparsed
 }
 
 // cityClaims are what a record says, and what its coordinates imply, about

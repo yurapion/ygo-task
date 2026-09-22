@@ -74,26 +74,30 @@ var facilitySignals = []signal{
 // Keying on the field path is what makes this case detectable at all: on this
 // data both claims come from one scrape of one hotel, so a source key of
 // "scrape-booking-sites" would see a single uncontested voice.
-func policyClaims(rec Record) []Claim {
+func policyClaims(rec Record) ([]Claim, []Unparsed) {
 	c := claimSet{observed: observedAt(rec)}
+	fired := false
 
 	description := strings.ToLower(rec.Description)
 	for _, s := range proseSignals {
 		if s.fires(description) {
 			c.add(s.field, s.value, rec.Source+"/description")
+			fired = true
 		}
 	}
 
-	for _, feature := range rec.Features {
-		lowered := strings.ToLower(feature)
-		for _, s := range facilitySignals {
-			if s.fires(lowered) {
-				c.add(s.field, s.value, rec.Source+"/features")
-			}
-		}
+	// Prose that matched nothing is handed over raw. Only a description where
+	// nothing fired at all is reported: one where a signal hit was read, however
+	// imperfectly, and printing those too would bury the conflicts under text
+	// that was never going to map to a field.
+	var unparsed []Unparsed
+	if !fired && rec.Description != "" {
+		unparsed = append(unparsed, Unparsed{
+			Kind: "description", Text: rec.Description, Source: rec.Source + "/description",
+		})
 	}
 
-	return c.claims
+	return c.claims, unparsed
 }
 
 // claimSet collects claims while dropping exact repeats, so two phrasings of

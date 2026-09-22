@@ -105,6 +105,10 @@ type Record struct {
 	PriceFromEUR   *int     `json:"price_from_eur"`
 	PriceFrom      string   `json:"price_from"`
 	LastSeen       string   `json:"last_seen"`
+
+	// UnknownFields holds every JSON key this struct has no home for, mapped to
+	// its raw value. Populated by UnmarshalJSON; never decoded from the feed.
+	UnknownFields map[string]string `json:"-"`
 }
 
 // LoadRecords decodes a feed dump.

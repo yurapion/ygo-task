@@ -43,5 +43,9 @@ func run(args []string, out io.Writer) error {
 	if n := claimcheck.UnresolvedCoords(); n > 0 {
 		slog.Warn("some coordinates were never cross-checked", "count", n)
 	}
+	if facilities, descriptions, fields := claimcheck.UnparsedCounts(); facilities+descriptions+fields > 0 {
+		slog.Warn("some of the feed went unread",
+			"facilities", facilities, "descriptions", descriptions, "unknown_fields", fields)
+	}
 	return nil
 }
