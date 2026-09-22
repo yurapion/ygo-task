@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode/utf8"
 )
 
 // Report writes every property with every claim, its source, and what the
@@ -81,11 +82,16 @@ func unparsedText(u Unparsed) string {
 // truncate keeps one unparsed item to one line. A description can be a
 // paragraph, and a report nobody can scan hides the conflicts as effectively as
 // not printing them.
+//
+// The limit counts runes, not bytes. These feeds carry German and Spanish prose,
+// and a byte slice lands inside a multi-byte rune often enough that the report
+// would print mojibake exactly where it is quoting text nobody parsed.
 func truncate(s string, max int) string {
-	if len(s) <= max {
+	if utf8.RuneCountInString(s) <= max {
 		return s
 	}
-	return s[:max-1] + "…"
+	runes := []rune(s)
+	return string(runes[:max-1]) + "…"
 }
 
 // observedLabel keeps "the feed carried no date" visually distinct from a date,

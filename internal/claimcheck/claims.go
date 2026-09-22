@@ -126,7 +126,10 @@ func observedAt(rec Record) time.Time {
 	t, err := time.Parse(lastSeenLayout, rec.LastSeen)
 	if err != nil {
 		// An unparseable date is not a reason to drop the record's claims, and
-		// it is not a reason to call them fresh. It is unknown, like no date.
+		// it is not a reason to call them fresh. It is unknown, like no date —
+		// but "the feed stopped using this format" and "the feed never carried
+		// a date" must not be the same silence, so this one is counted.
+		unparseableDates.Add(1)
 		return time.Time{}
 	}
 	return t

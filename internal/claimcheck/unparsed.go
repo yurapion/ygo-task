@@ -3,7 +3,6 @@ package claimcheck
 import (
 	"cmp"
 	"encoding/json"
-	"log/slog"
 	"reflect"
 	"slices"
 	"strings"
@@ -19,7 +18,14 @@ var (
 	unparsedFacilities   atomic.Int64
 	unparsedDescriptions atomic.Int64
 	unknownFields        atomic.Int64
+	unparseableDates     atomic.Int64
 )
+
+// UnparseableDates is how many records carried a last_seen this decoder could
+// not read. Every one of them reports staleness "unknown", which is the safe
+// answer and an indistinguishable one: a feed switching to RFC3339 would make
+// the whole corpus undateable without a single visible symptom.
+func UnparseableDates() int64 { return unparseableDates.Load() }
 
 // UnparsedCounts reports how much of the input went unread, by kind.
 func UnparsedCounts() (facilities, descriptions, fields int64) {
@@ -81,11 +87,9 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 		if known[key] {
 			continue
 		}
-		// A key with no struct field behind it is the loudest of the three
-		// signals: the feed's shape changed, which no amount of vocabulary
-		// tuning would have caught.
-		slog.Warn("feed published a field this decoder has no home for",
-			"key", key, "source", string(raw["source"]))
+		// Deliberately not logged here. A feed that adds one field adds it to
+		// every record, so a line per key per record is a million lines saying
+		// one thing. It is counted, and the count is reported once at the end.
 		if r.UnknownFields == nil {
 			r.UnknownFields = map[string]string{}
 		}
