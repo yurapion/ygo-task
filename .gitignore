@@ -8,3 +8,7 @@
 .idea/
 .vscode/
 .DS_Store
+
+# prompt-log hook marker (local tooling, not part of the submission)
+.ygo-prompt-log
+prompt-log-test.md
