@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"time"
@@ -18,7 +19,7 @@ func main() {
 	}
 }
 
-func run(args []string, out *os.File) error {
+func run(args []string, out io.Writer) error {
 	if len(args) != 1 {
 		return fmt.Errorf("usage: claimcheck <hotels.json>")
 	}

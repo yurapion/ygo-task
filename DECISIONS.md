@@ -104,11 +104,45 @@ The gate for each: `gofmt -l . && go vet ./... && go test ./... -race -count=1`.
 
 ### Known gaps
 
-Recorded as they are found; see the final section of this file at hand-off.
+All five acceptance cases are green and every guard below was checked by deleting
+it and naming the test that went red. What follows is what I know is weak.
 
-- Price and currency comparability, as above.
-- Nearest-city resolution is a small fixed lookup, not a geocoder. It is sufficient
-  to prove the derived-claim mechanism on this data and would not survive a feed
-  with cities outside the table.
-- Property grouping is a heuristic over normalised name plus city. It is tuned to
-  the one duplicate present here and is not a general entity-resolution strategy.
+**The text matching is the weakest thing in here.** Signals are case-insensitive
+substring tests. That is enough to surface a contradiction the feed already
+contains and nothing more. It bit immediately: `"Kein Restaurant"` contains
+`"restaurant"`, so the positive and negative signals both fired on one
+unambiguous sentence and the report invented a conflict inside it. Positive
+signals now name the phrases that contain them while meaning the opposite, which
+is a patch, not a fix — the general problem is negation and it needs a parser or a
+model, not a longer list. A policy stated in a phrasing not in the table is missed
+silently, and a missed signal looks exactly like an absent one.
+
+- **Price and currency comparability** is not attempted, for the reason above.
+- **Nearest-city resolution is a fixed six-entry lookup, not a geocoder.** Any
+  coordinate more than 50km from an entry gets no cross-check at all, which is a
+  silent degradation: an unchecked location reports the same as a checked one that
+  agreed. It is logged and counted (`UnresolvedCoords`) precisely so a lookup that
+  has fallen behind the feed shows up as a rate rather than as quiet.
+- **Property grouping is a heuristic**: collapsed name plus stated city, where
+  collapsing drops category words and repeated letters. That merges
+  Azzurro/Azzuro, and it would merge two real hotels whose names differ only by a
+  doubled letter. It is not entity resolution. A record with no name keys on the
+  city alone and would collect other unnamed records in that city.
+- **Grouping uses the stated city, so a record with wrong coordinates groups
+  correctly but a record with a wrong *city* would not.** City Lodge Berlin is the
+  first case; the mirror image is not handled.
+- **`policy.children` reads the features array but not the amenities CSV.** A feed
+  putting "kids club" in the CSV would be missed. No record here does.
+- **`cmd/claimcheck` has no tests**, and `LoadRecords` is untested against
+  malformed JSON — it returns the decoder's error unwrapped.
+- **`UnresolvedCoords` is a process-level counter**, which is right for a service
+  and wrong for a library someone calls twice expecting independent totals.
+- **Review snippets are treated as a source with no weight attached.** Two
+  cherry-picked strings with no count and no distribution sit beside a contracted
+  partner feed as equals. That is deliberate — nothing in this data justifies a
+  trust ranking — but it is not what a production system should do.
+
+The first thing I would do next is trust tiering: every claim already carries its
+source, so attaching a tier costs little and is the honest way to help a reader
+weigh a three-year-old scraped review against an undated partner feed, without the
+tool picking a winner on their behalf.
