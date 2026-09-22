@@ -56,12 +56,27 @@ type Finding struct {
 	Claims    []Claim
 }
 
+// Unparsed is something a feed published that this tool did not understand.
+//
+// It exists so that the limits of the vocabulary are visible in the output
+// rather than inferred from its absence. A facility we cannot canonicalise, a
+// description no signal matched, and a JSON key with no struct field behind it
+// are all cases where silence and comprehension look identical, and silence is
+// the more dangerous of the two.
+type Unparsed struct {
+	Kind   string // "field", "facility" or "description"
+	Name   string // the JSON key, for Kind "field"; empty otherwise
+	Text   string // the raw text, or the raw JSON value for Kind "field"
+	Source string
+}
+
 // Property is a real-world hotel, which may be described by several records.
 type Property struct {
 	Key      string
 	Name     string
 	Sources  []string
 	Findings []Finding
+	Unparsed []Unparsed
 }
 
 // Coords is a decimal lat/lng pair as it appears in the partner feeds.
