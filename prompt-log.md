@@ -5,6 +5,8 @@ came back. My prompts are verbatim, typos included. The responses are summarised
 — the full reasoning is long, and what matters for review is what was asked, what
 was pushed back on, and what got built.
 
+The verbatim prompts and the full replies are in [docs/session-log.html](docs/session-log.html). This file is the short read: what was asked, what was pushed back, and what got built.
+
 The short version of how this went: the assistant was most useful when it
 disagreed with me. Three of the defects it found I had missed entirely, and two
 of my instructions it argued down to something better. The times I had to correct

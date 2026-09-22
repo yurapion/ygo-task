@@ -1,0 +1,81 @@
+Output of: go run ./cmd/claimcheck testdata/hotels.json
+
+Hotel Mare Azzurro
+  sources: partner-feed-a, scrape-booking-sites
+  city                 SUPPORTED  stale
+      "Rimini"               partner-feed-a/city                  no date
+      "Rimini"               scrape-booking-sites/location        2023-11-02
+  stars                CONFLICT   stale
+      "4"                    partner-feed-a/stars                 no date
+      "3"                    scrape-booking-sites/rating          2023-11-02
+  policy.children      ABSENT     unknown
+  amenity.pool         CONFLICT   stale
+      "true"                 partner-feed-a/amenities             no date
+      "true"                 scrape-booking-sites/features        2023-11-02
+      "false"                scrape-booking-sites/review_snippets 2023-11-02
+  amenity.wifi         SUPPORTED  stale
+      "true"                 partner-feed-a/amenities             no date
+      "true"                 scrape-booking-sites/features        2023-11-02
+  amenity.parking      SUPPORTED  unknown
+      "true"                 partner-feed-a/amenities             no date
+  amenity.spa          ABSENT     unknown
+  amenity.restaurant   ABSENT     unknown
+  amenity.breakfast    ABSENT     unknown
+  UNPARSED             2
+      description  "<b>WELCOME TO PARADISE!!!</b> Newly renova…" partner-feed-a/description
+      facility     "pets allowed"                                scrape-booking-sites/features
+
+Alpenhof Garni
+  sources: partner-feed-b
+  city                 SUPPORTED  unknown
+      "Innsbruck"            derived:coords                       no date
+      "Innsbruck"            partner-feed-b/city                  no date
+  stars                ABSENT     unknown
+  policy.children      ABSENT     unknown
+  amenity.pool         ABSENT     unknown
+  amenity.wifi         ABSENT     unknown
+  amenity.parking      ABSENT     unknown
+  amenity.spa          ABSENT     unknown
+  amenity.restaurant   SUPPORTED  unknown
+      "false"                partner-feed-b/description           no date
+  amenity.breakfast    SUPPORTED  unknown
+      "true"                 partner-feed-b/description           no date
+
+Sunset Bay Resort & Spa
+  sources: scrape-booking-sites
+  city                 SUPPORTED  unknown
+      "Playa del Carmen"     scrape-booking-sites/location        no date
+  stars                ABSENT     unknown
+  policy.children      CONFLICT   unknown
+      "false"                scrape-booking-sites/description     no date
+      "true"                 scrape-booking-sites/features        no date
+  amenity.pool         SUPPORTED  unknown
+      "true"                 scrape-booking-sites/features        no date
+  amenity.wifi         ABSENT     unknown
+  amenity.parking      ABSENT     unknown
+  amenity.spa          SUPPORTED  unknown
+      "true"                 scrape-booking-sites/features        no date
+  amenity.restaurant   ABSENT     unknown
+  amenity.breakfast    ABSENT     unknown
+  UNPARSED             1
+      facility     "swim-up bar"                                 scrape-booking-sites/features
+
+City Lodge Berlin
+  sources: partner-feed-a
+  city                 CONFLICT   unknown
+      "Munich"               derived:coords                       no date
+      "Berlin"               partner-feed-a/city                  no date
+  stars                ABSENT     unknown
+  policy.children      ABSENT     unknown
+  amenity.pool         ABSENT     unknown
+  amenity.wifi         SUPPORTED  unknown
+      "true"                 partner-feed-a/amenities             no date
+  amenity.parking      ABSENT     unknown
+  amenity.spa          ABSENT     unknown
+  amenity.restaurant   ABSENT     unknown
+  amenity.breakfast    ABSENT     unknown
+
+stderr
+
+{"time":"2026-09-22T19:28:32.288774+07:00","level":"INFO","msg":"report written","records":5,"properties":4,"conflicts":4}
+{"time":"2026-09-22T19:28:32.288841+07:00","level":"WARN","msg":"some of the feed went unread","facilities":2,"descriptions":1,"unknown_fields":0}
