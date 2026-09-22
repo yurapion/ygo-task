@@ -9,6 +9,15 @@ import (
 
 var testNow = time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)
 
+// mustDate parses a feed date or fails the build of the test itself.
+func mustDate(s string) time.Time {
+	t, err := time.Parse(lastSeenLayout, s)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
 func TestCheckCity(t *testing.T) {
 	t.Parallel()
 
